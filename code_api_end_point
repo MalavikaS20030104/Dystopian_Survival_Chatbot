@@ -1,0 +1,45 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import requests
+
+app = Flask(__name__)
+CORS(app)  # Allow cross-origin requests from frontend
+
+# Your Google Gemini API Key
+GEMINI_API_KEY ="AIzaSyDGEGySs-qZFH9K1d1HL5tZi5VXrSD_Mos"  # Replace with your actual API key
+
+# Route to test if the backend is running
+@app.route("/")
+def home():
+    return "Backend is running!"
+
+# Route to handle user input and interact with Google Gemini API
+@app.route("/message", methods=["POST"])
+def chat():
+    user_input = request.json.get("input")  # Get input from the frontend
+
+    # Call Google Gemini API with the user's message
+    gemini_url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5:generateContent"
+    headers = {
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "contents": [{
+            "parts": [{"text": user_input}]
+        }]
+    }
+
+    # Make the POST request to Google Gemini API
+    response = requests.post(gemini_url, headers=headers, json=data)
+
+    if response.status_code == 200:
+        bot_reply = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        bot_reply = "Sorry, I couldn't process your request. Try again later."
+
+    return jsonify({"botResponse": bot_reply})
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)  # Start the Flask server on localhost:5000
